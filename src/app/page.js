@@ -21,19 +21,24 @@ export async function generateMetadata() {
     "Guided Solutions - 210+ years of collective MedTech experience dedicated to your success.";
 
   return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL), // ✅ IMPORTANT
+
     title: `${cleanTitle} | Guided Solutions`,
     description: description,
+
     alternates: {
-      canonical: "/",
+      canonical: "/", // now becomes absolute automatically
     },
+
     openGraph: {
       title: `${cleanTitle} | Guided Solutions`,
       description: description,
-      url: "/",
+      url: "/", // also becomes absolute
       siteName: "Guided Solutions",
       locale: "en_GB",
       type: "website",
     },
+
     twitter: {
       card: "summary_large_image",
       title: `${cleanTitle} | Guided Solutions`,
@@ -41,7 +46,6 @@ export async function generateMetadata() {
     },
   };
 }
-
 export default async function Home() {
   // Fetch data directly on the server for maximum performance and ISR
   // These calls are deduplicated via React cache() in fetchHandler

@@ -131,6 +131,8 @@ function PeopleSlider({
         <div className="gs__people-slider-wrapper">
           <Swiper
             className="gs__people-swiper"
+            aria-roledescription="carousel"
+            aria-label="Leadership team testimonials"
             onSwiper={(swiper) => {
               swiperRef.current = swiper;
             }}
@@ -146,6 +148,8 @@ function PeopleSlider({
               0: { slidesPerView: 1, spaceBetween: 16 },
               768: { slidesPerView: 1, spaceBetween: 24 },
             }}
+            observer={true}
+            observeParents={true}
             modules={[Pagination]}
           >
             {slides.map((person, idx) => (

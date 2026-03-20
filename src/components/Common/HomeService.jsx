@@ -89,7 +89,10 @@ function HomeService({ theme = "dark", items = [], title, subtitle }) {
               </div>
 
               <div className="gs__also-visit-actions">
-                <button className="gs__btn">
+                <button 
+                  className="gs__btn" 
+                  aria-label={`View ${item.btn1 || "Our Approach"} and ${item.btn2 || "Case Studies"} for ${item.title}`}
+                >
                   <span className="gs__btn-inner">
                     <span className="gs__btn-text">
                       {item.btn1 || "Our Approach"}
@@ -99,8 +102,13 @@ function HomeService({ theme = "dark", items = [], title, subtitle }) {
                     </span>
                   </span>
                 </button>
-                <Link href={item.link} className="gs__also-visit-link">
+                <Link
+                  href={item.link}
+                  className="gs__also-visit-link"
+                  aria-label={`Learn more about ${item.title}`}
+                >
                   Learn more{" "}
+                  <span className="gs__sr-only">about {item.title}</span>
                   <svg
                     width="8"
                     height="8"

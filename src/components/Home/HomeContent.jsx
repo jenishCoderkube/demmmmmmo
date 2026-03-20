@@ -22,7 +22,11 @@ import { Images } from "lucide-react";
 const Videoimg = "/images/video-img.png";
 const Globe = "/images/Globe.png";
 
-export default function HomeContent({ theme = "dark", homeData, teamSectionData }) {
+export default function HomeContent({
+  theme = "dark",
+  homeData,
+  teamSectionData,
+}) {
   const isDarkFooter = theme === "dark";
 
   const data = homeData?.data || {};
@@ -55,7 +59,6 @@ export default function HomeContent({ theme = "dark", homeData, teamSectionData 
       >
         <div className="gs__container">
           <div className="gs__also-visit-container">
-            <div className="gs__h2-title" />
             {whyGs.title ? (
               <div
                 className="gs__h2-title"
@@ -116,11 +119,15 @@ export default function HomeContent({ theme = "dark", homeData, teamSectionData 
               {theWhy.subtitle ||
                 "Hear from our team about what drives our passion for connecting exceptional talent with MedTech companies changing lives."}
             </p>
-            <div className="gs__video-img-wp">
+            <button
+              className="gs__video-img-wp"
+              aria-label="Play video about The Why"
+              type="button"
+            >
               <div className="gs__video-img">
                 <Image
                   src={theWhy.thumbnail?.trim() || Videoimg}
-                  alt="Video-img"
+                  alt="Video thumbnail"
                   width={1120}
                   height={630}
                   style={{ width: "100%", height: "auto" }}
@@ -129,12 +136,12 @@ export default function HomeContent({ theme = "dark", homeData, teamSectionData 
               <div className="gs__video-logo">
                 <Image
                   src="/images/footer-logo.svg"
-                  alt="Footer Logo"
+                  alt="Guided Solutions Logo"
                   width={120}
                   height={40}
                 />
               </div>
-            </div>
+            </button>
           </div>
         </div>
       </section>
@@ -194,6 +201,8 @@ export default function HomeContent({ theme = "dark", homeData, teamSectionData 
                   1024: { slidesPerView: 3.3, spaceBetween: 20 },
                   1280: { slidesPerView: 3.5, spaceBetween: 24 },
                 }}
+                observer={true}
+                observeParents={true}
                 modules={[Navigation, Autoplay]}
               >
                 {problemsSolve.items?.map((item, idx) => (

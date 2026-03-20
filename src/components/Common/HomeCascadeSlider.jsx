@@ -79,7 +79,7 @@ export default function HomeCascadeSlider({
       aria-label="Highlights slider"
       style={{ outline: "none" }}
     >
-      <div className="cascade-slider_slides">
+      <div className="cascade-slider_slides" aria-live="polite">
         {items.map((item, index) => {
           const isCenter = index === cascadeIndex;
           const isLeft = index === mod(cascadeIndex - 1, itemCount);
@@ -143,12 +143,11 @@ export default function HomeCascadeSlider({
 
         {showArrows && (
           <div className="cascade-slider_arrows-wp">
-            <span
+            <button
+              type="button"
               className="cascade-slider_arrow cascade-slider_arrow-left"
               data-action="prev"
-              role="button"
-              tabIndex={0}
-              aria-label="Previous"
+              aria-label="Previous slide"
               onClick={goPrev}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -181,13 +180,12 @@ export default function HomeCascadeSlider({
                   </clipPath>
                 </defs>
               </svg>
-            </span>
-            <span
+            </button>
+            <button
+              type="button"
               className="cascade-slider_arrow cascade-slider_arrow-right"
               data-action="next"
-              role="button"
-              tabIndex={0}
-              aria-label="Next"
+              aria-label="Next slide"
               onClick={goNext}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -220,7 +218,7 @@ export default function HomeCascadeSlider({
                   </clipPath>
                 </defs>
               </svg>
-            </span>
+            </button>
           </div>
         )}
       </div>

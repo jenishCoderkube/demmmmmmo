@@ -11,7 +11,7 @@ function HomeBanner({ theme = "dark", title }) {
         <div className="gs__container">
           <div className="gs__home-banner-content">
             {title ? (
-              <div
+              <h1
                 className="gs__h2-title"
                 dangerouslySetInnerHTML={{ __html: title }}
               />
@@ -21,7 +21,7 @@ function HomeBanner({ theme = "dark", title }) {
               </h1>
             )}
             <div className="gs_banner-btn">
-              <button className="gs__btn">
+              <button className="gs__btn" aria-label="Explore Our Solutions">
                 <span className="gs__btn-inner">
                   <span className="gs__btn-text">
                     <span>Our Solutions </span>
@@ -47,7 +47,10 @@ function HomeBanner({ theme = "dark", title }) {
                   </span>
                 </span>
               </button>
-              <button className="gs__btn gs__white-btn">
+              <button
+                className="gs__btn gs__white-btn"
+                aria-label="Learn about Our Approach"
+              >
                 <span className="gs__btn-inner">
                   <span className="gs__btn-text">Our Approach</span>
                   <span className="gs__btn-text">Our Approach</span>

@@ -265,6 +265,18 @@ html {
   display: none;
 }
 
+.gs__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 .relative {
   position: relative;
 }
@@ -6672,6 +6684,11 @@ img.gs__about-ceo-img {
   bottom: -3rem;
   cursor: pointer;
   z-index: 5;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
 }
 
 /* .cascade-slider_arrow-left {
@@ -6707,16 +6724,16 @@ img.gs__about-ceo-img {
   position: absolute;
 }
 
-span.cascade-slider_arrow {
+.cascade-slider_arrow {
   display: flex;
   align-items: center;
 }
 
-span.cascade-slider_arrow.cascade-slider_arrow-left {
+.cascade-slider_arrow.cascade-slider_arrow-left {
   right: 70px;
 }
 
-span.cascade-slider_arrow.cascade-slider_arrow-right {
+.cascade-slider_arrow.cascade-slider_arrow-right {
   left: 70px;
 }
 
