@@ -25,6 +25,7 @@ export const fetchHandler = cache(async (endpoint, options = {}) => {
     });
 
     const result = await response.json();
+    console.log("result", result);
 
     return {
       success: result?.success || response.ok,
