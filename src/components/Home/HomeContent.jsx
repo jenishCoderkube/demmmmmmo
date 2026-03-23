@@ -1,8 +1,9 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import FAQ from "@/components/Common/FAQ";
 import GetInTouch from "@/components/Common/GetInTouch";
 import HomeBanner from "@/components/Common/HomeBanner";
+import HomeLogoLoader from "@/components/Home/HomeLogoLoader";
 import HomeService from "@/components/Common/HomeService";
 import PeopleSlider from "@/components/Common/PeopleSlider";
 import Image from "next/image";
@@ -13,8 +14,6 @@ import ProblemSliderCard from "@/components/Common/ProblemSliderCard";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import CascadeSlider from "../Common/CascadeSlider";
-import { CascadeSliderCoreValuesCard } from "../Common/CascadeSliderCards";
 import { HomeCascadeSliderCoreValuesCard } from "../Common/HomeCascadeSliderCards";
 import HomeCascadeSlider from "../Common/HomeCascadeSlider";
 import { Images } from "lucide-react";
@@ -22,11 +21,30 @@ import { Images } from "lucide-react";
 const Videoimg = "/images/video-img.png";
 const Globe = "/images/Globe.png";
 
+/** Home cascade shows 5 cards at once — need ≥5 slides (cycle CMS items if fewer). */
+function padHomeCascadeItems(items, minCount = 5) {
+  if (!items?.length || items.length >= minCount) return items;
+  const out = [...items];
+  let i = 0;
+  while (out.length < minCount) {
+    const src = items[i % items.length];
+    out.push({
+      ...src,
+      id: `${String(src.id)}-repeat-${out.length}`,
+    });
+    i += 1;
+  }
+  return out;
+}
+
 export default function HomeContent({
   theme = "dark",
   homeData,
   teamSectionData,
 }) {
+  // Invalid hook call fix: move useState inside component body
+  const [showVideoModal, setShowVideoModal] = useState(false);
+
   const isDarkFooter = theme === "dark";
 
   const data = homeData?.data || {};
@@ -42,15 +60,19 @@ export default function HomeContent({
   const faqSection = data.faq_section || {};
   const cta = data.cta || {};
   const icons = ["circles", "circle", "lines"];
-  const dynamicCoreValues = (whyGs.items || []).map((item, index) => ({
-    id: item._id || String(index),
-    title: item.title,
-    description: item.description,
-    icon: icons[index % icons.length],
-  }));
+  const dynamicCoreValues = padHomeCascadeItems(
+    (whyGs.items || []).map((item, index) => ({
+      id: item._id || String(index),
+      title: item.title,
+      description: item.description,
+      icon: icons[index % icons.length],
+    })),
+    5,
+  );
 
   return (
     <>
+      {/* <HomeLogoLoader /> */}
       <HomeBanner />
       {/* Our Core Values – cascade slider (common component) */}
       <section
@@ -119,10 +141,49 @@ export default function HomeContent({
               {theWhy.subtitle ||
                 "Hear from our team about what drives our passion for connecting exceptional talent with MedTech companies changing lives."}
             </p>
+
+            {/* Video Modal Component */}
+            {showVideoModal && (
+              <div
+                className="gs__video-modal-backdrop"
+                onClick={() => setShowVideoModal(false)}
+              >
+                <div
+                  className="gs__video-modal-content"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    className="gs__video-close-btn"
+                    onClick={() => setShowVideoModal(false)}
+                    aria-label="Close video"
+                  >
+                    &times;
+                  </button>
+
+                  <iframe
+                    src={
+                      theWhy.videoUrl
+                        ? theWhy.videoUrl +
+                          (theWhy.videoUrl.includes("?") ? "&" : "?") +
+                          "autoplay=1"
+                        : "https://player.vimeo.com/video/825098345?autoplay=1"
+                    }
+                    allow="autoplay; fullscreen"
+                    allowFullScreen
+                    title="Watch Video"
+                    className="gs__video-iframe"
+                  />
+                </div>
+              </div>
+            )}
+
             <button
-              className="gs__video-img-wp"
+              className={`gs__video-img-wp ${
+                showVideoModal ? "gs__video-active" : ""
+              }`}
               aria-label="Play video about The Why"
               type="button"
+              onClick={() => setShowVideoModal(true)}
             >
               <div className="gs__video-img">
                 <Image
@@ -130,9 +191,9 @@ export default function HomeContent({
                   alt="Video thumbnail"
                   width={1120}
                   height={630}
-                  style={{ width: "100%", height: "auto" }}
                 />
               </div>
+
               <div className="gs__video-logo">
                 <Image
                   src="/images/footer-logo.svg"

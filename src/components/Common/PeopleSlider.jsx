@@ -118,7 +118,7 @@ function PeopleSlider({
       <div className="gs__container">
         <header className="gs__people-header">
           {title ? (
-            <h2
+            <div
               className="gs__h2-title"
               dangerouslySetInnerHTML={{ __html: title }}
             />

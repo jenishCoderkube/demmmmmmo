@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useRef } from "react";
 
 /**
- * Cascade/3D slider for homepage as shown in screenshot.
- * Shows 3 cards: center (active), left, right; others are faded behind.
+ * Cascade/3D slider for homepage.
+ * Always uses 5 visible slots (far-prev, prev, center, next, far-next).
+ * Pass at least 5 items (e.g. pad in HomeContent) so all five can appear.
  */
 export default function HomeCascadeSlider({
   items = [],
@@ -82,19 +83,26 @@ export default function HomeCascadeSlider({
       <div className="cascade-slider_slides" aria-live="polite">
         {items.map((item, index) => {
           const isCenter = index === cascadeIndex;
-          const isLeft = index === mod(cascadeIndex - 1, itemCount);
-          const isRight = index === mod(cascadeIndex + 1, itemCount);
+          const isPrev = index === mod(cascadeIndex - 1, itemCount);
+          const isNext = index === mod(cascadeIndex + 1, itemCount);
+          const isFarPrev = index === mod(cascadeIndex - 2, itemCount);
+          const isFarNext = index === mod(cascadeIndex + 2, itemCount);
 
-          let positionClass = "";
+          let positionClass = "back";
           if (isCenter) positionClass = "now";
-          else if (isLeft) positionClass = "prev";
-          else if (isRight) positionClass = "next";
-          else positionClass = "back";
+          else if (isPrev) positionClass = "prev";
+          else if (isNext) positionClass = "next";
+          else if (isFarPrev) positionClass = "far-prev";
+          else if (isFarNext) positionClass = "far-next";
 
-          /*
-            For the "back" slides, for extra fade and z-index layering, you may want to add more specific classes,
-            depending on how many cards you want visible at once (expand/animate to left/right further if desired).
-          */
+          const zForVisible =
+            positionClass === "now"
+              ? 5
+              : positionClass === "prev" || positionClass === "next"
+                ? 2
+                : positionClass === "far-prev" || positionClass === "far-next"
+                  ? 1
+                  : 0;
 
           return (
             <div
@@ -110,10 +118,18 @@ export default function HomeCascadeSlider({
                       filter: "blur(1px)",
                     }
                   : {
-                      opacity: 1,
+                      opacity:
+                        positionClass === "far-prev" ||
+                        positionClass === "far-next"
+                          ? 0.85
+                          : 1,
                       pointerEvents: "auto",
-                      zIndex: positionClass === "now" ? 5 : 2,
-                      filter: "none",
+                      zIndex: zForVisible,
+                      filter:
+                        positionClass === "far-prev" ||
+                        positionClass === "far-next"
+                          ? "brightness(78%)"
+                          : "none",
                     }
               }
               aria-hidden={!isCenter}

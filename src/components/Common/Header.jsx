@@ -1,22 +1,143 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import {
+  MEGA_EXPERTISE_FOCUS,
+  MEGA_EXPERTISE_JOBS,
+  MEGA_INSIGHTS,
+  MEGA_SERVICES,
+} from "@/data/headerMegaMenus";
+
+const MEGA_KEYS = {
+  services: "services",
+  expertise: "expertise",
+  insights: "insights",
+};
+
+const DESKTOP_MQ = "(min-width: 992px)";
+
+function subscribeDesktopMq(callback) {
+  const mq = window.matchMedia(DESKTOP_MQ);
+  mq.addEventListener("change", callback);
+  return () => mq.removeEventListener("change", callback);
+}
+
+function getDesktopSnapshot() {
+  return window.matchMedia(DESKTOP_MQ).matches;
+}
+
+function getServerSnapshot() {
+  return false;
+}
+
+function NavChevron({ open, className = "" }) {
+  return (
+    <svg
+      className={`gs__nav-chevron ${open ? "gs__nav-chevron--open" : ""} ${className}`.trim()}
+      width="9"
+      height="12"
+      viewBox="0 0 9 12"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <g clipPath="url(#clip0_4345_12875)">
+        <path
+          d="M4.91188 11.4004L0.671875 7.03236L1.40788 6.36036L4.39988 9.57636V2.56836H5.48788V9.57636L8.47988 6.36036L9.23188 7.03236L4.97588 11.4004H4.91188Z"
+          fill="currentColor"
+        />
+      </g>
+      <defs>
+        <clipPath id="clip0_4345_12875">
+          <rect
+            width="10"
+            height="12"
+            fill="currentColor"
+          />
+        </clipPath>
+      </defs>
+    </svg>
+  );
+}
 
 export default function Header() {
+  const pathname = usePathname();
   const [theme, setTheme] = useState("dark");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [megaOpen, setMegaOpen] = useState(null);
+  /** True while playing slide-up exit animation (megaOpen still set until animation ends). */
+  const [megaExiting, setMegaExiting] = useState(false);
+  /** Bumped on each open so panel/backdrop remount and play the same enter animation (hover or click). */
+  const [megaEnterSeq, setMegaEnterSeq] = useState(0);
+  const headerRef = useRef(null);
+  const closeTimerRef = useRef(null);
+  const megaOpenRef = useRef(null);
+  /** When true, mega was opened by click — skip auto-close on mouse leave so users can reach the panel. */
+  const megaPinnedByClickRef = useRef(false);
+
+  useEffect(() => {
+    megaOpenRef.current = megaOpen;
+  }, [megaOpen]);
+  const isDesktop = useSyncExternalStore(
+    subscribeDesktopMq,
+    getDesktopSnapshot,
+    getServerSnapshot,
+  );
+
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  /** immediate = skip animation (route change, follow link, mobile menu close) */
+  const closeMega = useCallback(
+    (immediate = false) => {
+      megaPinnedByClickRef.current = false;
+      clearCloseTimer();
+      if (immediate) {
+        setMegaExiting(false);
+        setMegaOpen(null);
+        return;
+      }
+      if (megaOpenRef.current === null) {
+        setMegaExiting(false);
+        return;
+      }
+      setMegaExiting(true);
+    },
+    [clearCloseTimer],
+  );
+
+  const scheduleCloseMega = useCallback(() => {
+    if (megaPinnedByClickRef.current) return;
+    clearCloseTimer();
+    closeTimerRef.current = setTimeout(() => {
+      megaPinnedByClickRef.current = false;
+      if (megaOpenRef.current === null) return;
+      setMegaExiting(true);
+    }, 220);
+  }, [clearCloseTimer]);
 
   useEffect(() => {
     const headerHeight = 72;
     const sections = document.querySelectorAll("[data-theme]");
 
     const handleScroll = () => {
-      let currentTheme = "light";
+      let currentTheme = "section-light";
 
       sections.forEach((section) => {
         const rect = section.getBoundingClientRect();
         if (rect.top <= headerHeight && rect.bottom > headerHeight) {
-          currentTheme = section.dataset.theme;
+          currentTheme = section.dataset.theme || "section-light";
         }
       });
 
@@ -29,26 +150,269 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const isDark = theme === "dark";
+  useEffect(() => {
+    closeMega(true);
+    setMenuOpen(false);
+  }, [pathname, closeMega]);
 
-  const navItems = [
-    { name: "About", href: "/about" },
-    { name: "Approach", href: "/approach" },
-    { name: "Services", href: "/services/individual-assignments" },
-    { name: "Expertise", href: "/expertise" },
-    { name: "Case Studies", href: "/casestudies" },
-    { name: "Insights", href: "/insights/whitepaper" },
-    { name: "Locations", href: "/contact" },
-  ];
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        closeMega();
+        setMenuOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [closeMega]);
+
+  useEffect(() => {
+    return () => clearCloseTimer();
+  }, [clearCloseTimer]);
+
+  const isDark = theme === "section-dark" || theme === "dark";
+
+  const bumpMegaEnterAnimation = () => {
+    setMegaEnterSeq((n) => n + 1);
+  };
+
+  const toggleMega = (key) => {
+    clearCloseTimer();
+    if (megaOpen === key) {
+      // Mobile: accordion — second tap closes (desktop uses exit animation + pin logic below).
+      if (!isDesktop) {
+        megaPinnedByClickRef.current = false;
+        setMegaExiting(false);
+        setMegaOpen(null);
+        return;
+      }
+      // Desktop: hover opened first → first click pins; second click plays exit animation.
+      if (!megaPinnedByClickRef.current) {
+        megaPinnedByClickRef.current = true;
+        return;
+      }
+      megaPinnedByClickRef.current = false;
+      if (megaOpen !== null) setMegaExiting(true);
+      return;
+    }
+    megaPinnedByClickRef.current = true;
+    setMegaExiting(false);
+    if (isDesktop) {
+      bumpMegaEnterAnimation();
+    }
+    setMegaOpen(key);
+  };
+
+  const openMegaHover = (key) => {
+    clearCloseTimer();
+    megaPinnedByClickRef.current = false;
+    setMegaExiting(false);
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 992px)").matches
+    ) {
+      if (megaOpen !== key) {
+        bumpMegaEnterAnimation();
+        setMegaOpen(key);
+      }
+    }
+  };
+
+  const handleMegaPanelAnimationEnd = (e) => {
+    if (e.target !== e.currentTarget) return;
+    if (e.animationName !== "gs-mega-out") return;
+    setMegaOpen(null);
+    setMegaExiting(false);
+  };
+
+  const renderMegaInner = () => {
+    if (megaOpen === MEGA_KEYS.services) {
+      return (
+        <div className="gs__mega-inner gs__container">
+          <ul
+            className="gs__mega-list gs__mega-list--stack"
+            role="list"
+          >
+            {MEGA_SERVICES.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className="gs__mega-link gs__mega-link--serif"
+                  onClick={() => {
+                    closeMega(true);
+                    setMenuOpen(false);
+                  }}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
+
+    if (megaOpen === MEGA_KEYS.insights) {
+      return (
+        <div className="gs__mega-inner gs__container">
+          <ul
+            className="gs__mega-list gs__mega-list--stack"
+            role="list"
+          >
+            {MEGA_INSIGHTS.map((item) => (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className="gs__mega-link gs__mega-link--serif"
+                  onClick={() => {
+                    closeMega(true);
+                    setMenuOpen(false);
+                  }}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    }
+
+    if (megaOpen === MEGA_KEYS.expertise) {
+      return (
+        <div className="gs__mega-inner gs__container gs__mega-expertise">
+          <div className="gs__mega-expertise-col">
+            <h3 className="gs__mega-col-title">Focus Areas</h3>
+            <ul
+              className="gs__mega-list gs__mega-list--dense"
+              role="list"
+            >
+              {MEGA_EXPERTISE_FOCUS.map((item) => (
+                <li key={item.label}>
+                  <Link
+                    href={item.href}
+                    className="gs__mega-link gs__mega-link--sans"
+                    onClick={() => {
+                      closeMega(true);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div
+            className="gs__mega-expertise-divider"
+            aria-hidden
+          />
+          <div className="gs__mega-expertise-col">
+            <h3 className="gs__mega-col-title">Job Functions</h3>
+            <ul
+              className="gs__mega-list gs__mega-list--dense"
+              role="list"
+            >
+              {MEGA_EXPERTISE_JOBS.map((item) => (
+                <li key={item.label}>
+                  <Link
+                    href={item.href}
+                    className="gs__mega-link gs__mega-link--sans"
+                    onClick={() => {
+                      closeMega(true);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const renderMobileAccordion = (key, items, twoCol = false) => {
+    if (!megaOpen || megaOpen !== key) return null;
+    if (twoCol) {
+      return (
+        <div className="gs__nav-accordion-panel">
+          <div className="gs__nav-accordion-block">
+            <p className="gs__nav-accordion-heading">Focus Areas</p>
+            <ul className="gs__nav-accordion-list">
+              {MEGA_EXPERTISE_FOCUS.map((item) => (
+                <li key={item.label}>
+                  <Link
+                    href={item.href}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      closeMega(true);
+                    }}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="gs__nav-accordion-block">
+            <p className="gs__nav-accordion-heading">Job Functions</p>
+            <ul className="gs__nav-accordion-list">
+              {MEGA_EXPERTISE_JOBS.map((item) => (
+                <li key={item.label}>
+                  <Link
+                    href={item.href}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      closeMega(true);
+                    }}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="gs__nav-accordion-panel">
+        <ul className="gs__nav-accordion-list">
+          {items.map((item) => (
+            <li key={item.href}>
+              <Link
+                href={item.href}
+                onClick={() => {
+                  setMenuOpen(false);
+                  closeMega(true);
+                }}
+              >
+                {item.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
 
   return (
     <header
-      className={`gs__header ${isDark ? "gs__header--dark" : "gs__header--light"}`}
+      ref={headerRef}
+      className={`gs__header ${isDark ? "gs__header--dark" : "gs__header--light"} ${megaOpen ? "gs__header--mega-open" : ""}`}
     >
-      <div className="gs__container">
+      <div className="gs__container gs__header-bar">
         <div className="gs__header-inner">
-          {/* Logo */}
-          <Link href="/" className="gs__logo">
+          <Link
+            href="/"
+            className="gs__logo"
+            onClick={() => setMenuOpen(false)}
+          >
             <svg
               width="200"
               height="36"
@@ -127,21 +491,94 @@ export default function Header() {
             </svg>
           </Link>
 
-          {/* Desktop Nav */}
-          <nav className={`gs__nav ${menuOpen ? "active" : ""}`}>
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="gs__nav-link"
-                onClick={() => setMenuOpen(false)}
-              >
-                {item.name}
-                <span className="gs__nav-underline"></span>
-              </Link>
-            ))}
+          <nav
+            className={`gs__nav ${menuOpen ? "active" : ""}`}
+            id="primary-navigation"
+            aria-label="Primary"
+          >
+            <Link
+              href="/about"
+              className="gs__nav-link"
+              onClick={() => setMenuOpen(false)}
+            >
+              About
+              <span className="gs__nav-underline" />
+            </Link>
+            <Link
+              href="/approach"
+              className="gs__nav-link"
+              onClick={() => setMenuOpen(false)}
+            >
+              Approach
+              <span className="gs__nav-underline" />
+            </Link>
 
-            {/* Mobile Contact */}
+            <div className="gs__nav-item gs__nav-item--mega gs__nav-link">
+              <button
+                type="button"
+                className={`gs__nav-link gs__nav-link--trigger ${megaOpen === MEGA_KEYS.services ? "is-active" : ""}`}
+                aria-expanded={megaOpen === MEGA_KEYS.services}
+                aria-haspopup="true"
+                onClick={() => toggleMega(MEGA_KEYS.services)}
+                onMouseEnter={() => openMegaHover(MEGA_KEYS.services)}
+                onMouseLeave={scheduleCloseMega}
+              >
+                Services
+                <NavChevron open={megaOpen === MEGA_KEYS.services} />
+              </button>
+              {renderMobileAccordion(MEGA_KEYS.services, MEGA_SERVICES)}
+            </div>
+
+            <div className="gs__nav-item gs__nav-item--mega gs__nav-link">
+              <button
+                type="button"
+                className={`gs__nav-link gs__nav-link--trigger ${megaOpen === MEGA_KEYS.expertise ? "is-active" : ""}`}
+                aria-expanded={megaOpen === MEGA_KEYS.expertise}
+                aria-haspopup="true"
+                onClick={() => toggleMega(MEGA_KEYS.expertise)}
+                onMouseEnter={() => openMegaHover(MEGA_KEYS.expertise)}
+                onMouseLeave={scheduleCloseMega}
+              >
+                Expertise
+                <NavChevron open={megaOpen === MEGA_KEYS.expertise} />
+              </button>
+              {renderMobileAccordion(MEGA_KEYS.expertise, [], true)}
+            </div>
+
+            <Link
+              href="/casestudies"
+              className="gs__nav-link"
+              onClick={() => setMenuOpen(false)}
+            >
+              Case Studies
+              <span className="gs__nav-underline" />
+            </Link>
+
+            <div className="gs__nav-item gs__nav-item--mega gs__nav-link">
+              <button
+                type="button"
+                className={`gs__nav-link gs__nav-link--trigger ${megaOpen === MEGA_KEYS.insights ? "is-active" : ""}`}
+                aria-expanded={megaOpen === MEGA_KEYS.insights}
+                aria-haspopup="true"
+                onClick={() => toggleMega(MEGA_KEYS.insights)}
+                onMouseEnter={() => openMegaHover(MEGA_KEYS.insights)}
+                onMouseLeave={scheduleCloseMega}
+              >
+                Insights
+                <NavChevron open={megaOpen === MEGA_KEYS.insights} />
+              </button>
+              {renderMobileAccordion(MEGA_KEYS.insights, MEGA_INSIGHTS)}
+            </div>
+
+            <Link
+              href="/contact"
+              className="gs__nav-link"
+              onClick={() => setMenuOpen(false)}
+            >
+              Locations
+              <span className="gs__nav-underline" />
+            </Link>
+
             <Link
               href="/contact"
               className="gs__contact-btn mobile-contact"
@@ -151,22 +588,54 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* Desktop Contact */}
-          <Link href="/contact" className="gs__contact-btn desktop-contact">
+          <Link
+            href="/contact"
+            className="gs__contact-btn desktop-contact"
+          >
             Contact
           </Link>
 
-          {/* Hamburger */}
           <button
+            type="button"
             className={`gs__hamburger ${menuOpen ? "active" : ""}`}
-            onClick={() => setMenuOpen(!menuOpen)}
+            onClick={() => {
+              setMenuOpen((prev) => {
+                if (prev) closeMega(true);
+                return !prev;
+              });
+            }}
+            aria-expanded={menuOpen}
+            aria-controls="primary-navigation"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
           >
-            <span></span>
-            <span></span>
-            <span></span>
+            <span />
+            <span />
+            <span />
           </button>
         </div>
       </div>
+
+      {/* Desktop full-width mega menu (not mounted on mobile — accordion only) */}
+      {megaOpen != null && isDesktop && (
+        <>
+          <button
+            key={`mega-bd-${megaEnterSeq}`}
+            type="button"
+            className={`gs__mega-backdrop ${megaExiting ? "gs__mega-backdrop--out" : "gs__mega-backdrop--in"}`}
+            aria-label="Close menu"
+            onClick={() => closeMega(false)}
+          />
+          <div
+            key={`mega-panel-${megaEnterSeq}`}
+            className={`gs__mega-panel ${megaExiting ? "gs__mega-panel--out" : "gs__mega-panel--in"}`}
+            onMouseEnter={clearCloseTimer}
+            onMouseLeave={scheduleCloseMega}
+            onAnimationEnd={handleMegaPanelAnimationEnd}
+          >
+            {renderMegaInner()}
+          </div>
+        </>
+      )}
     </header>
   );
 }
